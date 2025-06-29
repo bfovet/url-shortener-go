@@ -1,3 +1,3 @@
-gin
+chi/gin
 logrus
 testify

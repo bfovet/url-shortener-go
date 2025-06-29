@@ -1,27 +1,39 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
-func ShortenUrl(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got /shorten")
-	io.WriteString(w, "shortening url")
+var (
+	defaultHostAddr = ":8080"
+)
+
+type Request struct {
+	URL string `json:"url" validate:"required,url"`
 }
 
 // Start the API server
 func Server() {
-	http.HandleFunc("/shorten", ShortenUrl)
+	router := chi.NewRouter()
 
-	err := http.ListenAndServe(":8080", nil)
-	if errors.Is(err, http.ErrServerClosed) {
-		fmt.Printf("server closed\n")
-	} else if err != nil {
-		fmt.Printf("error starting server: %s\n", err)
-		os.Exit(1)
-	}
+	router.Use(middleware.Logger)
+
+	router.Route("/shorten", func(r chi.Router) {
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			var req Request
+			err := render.DecodeJSON(r.Body, &req)
+			if err != nil {
+				fmt.Println("failed to decode request body")
+				return
+			}
+			fmt.Println(req)
+		})
+	})
+
+	http.ListenAndServe(defaultHostAddr, router)
 }
