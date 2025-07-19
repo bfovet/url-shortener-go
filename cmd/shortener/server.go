@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -73,6 +74,25 @@ func Server() {
 			render.Status(r, http.StatusCreated)
 			render.JSON(w, r, response)
 		})
+	})
+
+	router.Get("/{shortCode}", func(w http.ResponseWriter, r *http.Request) {
+		shortCode := chi.URLParam(r, "shortCode")
+
+		originalURL, exists := urlStore[shortCode]
+
+		if !exists {
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, ErrorResponse{Error: "Short URL not found"})
+			return
+		}
+
+		// Ensure URL has a scheme
+		if !strings.HasPrefix(originalURL, "http://") && !strings.HasPrefix(originalURL, "https://") {
+			originalURL = "https://" + originalURL
+		}
+
+		http.Redirect(w, r, originalURL, http.StatusMovedPermanently)
 	})
 
 	fmt.Printf("Server starting on %s\n", defaultHostAddr)
