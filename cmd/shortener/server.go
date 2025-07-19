@@ -46,12 +46,11 @@ func Server() {
 	router.Route("/shorten", func(r chi.Router) {
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			var req Request
-			err := render.DecodeJSON(r.Body, &req)
-			if err != nil {
-				fmt.Println("failed to decode request body")
+			if err := render.DecodeJSON(r.Body, &req); err != nil {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, ErrorResponse{Error: "Invalid JSON"})
 				return
 			}
-			fmt.Println(req)
 
 			// Generate unique short code
 			var shortCode string
