@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -37,6 +38,12 @@ func generateShortCode() string {
 	return base64.URLEncoding.EncodeToString(bytes)[:6]
 }
 
+// isValidURL checks if the provided URL is valid
+func isValidURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
 // Start the API server
 func Server() {
 	router := chi.NewRouter()
@@ -49,6 +56,18 @@ func Server() {
 			if err := render.DecodeJSON(r.Body, &req); err != nil {
 				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, ErrorResponse{Error: "Invalid JSON"})
+				return
+			}
+
+			if req.URL == "" {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, ErrorResponse{Error: "URL is required"})
+				return
+			}
+
+			if !isValidURL(req.URL) {
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, ErrorResponse{Error: "Invalid URL format"})
 				return
 			}
 
